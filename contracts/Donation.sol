@@ -18,25 +18,30 @@ contract Donation is Ownable {
     constructor(address _donationReceiver, string memory _description) Ownable(msg.sender) payable {
         description = _description;
         donationsReceiver = _donationReceiver;
+        if (msg.value > 0){
+            storeDonate();    
+        }
     }
-
+    function storeDonate() internal {
+        if(_donations[tx.origin] == 0){
+            charityAddresses.push(tx.origin);
+        }
+        _donations[tx.origin] += msg.value;
+        totalDonationsAmount += msg.value;
+        emit Transfer(tx.origin, msg.value);     
+    }
     function donate() external payable {
         if(msg.value <= 0) { 
             revert ZeroAmountError(msg.sender);
         }
-        if(_donations[msg.sender] == 0){
-            charityAddresses.push(msg.sender);
-        }
-        _donations[msg.sender] += msg.value;
-        totalDonationsAmount += msg.value;
-        emit Transfer(msg.sender, msg.value);        
+        storeDonate();       
     }
 
-    function sendFundsToReceiver(uint256 amount) external onlyOwner {
+    function sendFundsToReceiver(uint256 amount) external payable onlyOwner {
         if (amount > address(this).balance ){
             revert ZeroAmountError(msg.sender);
         }
-        bool sent = payable(donationsReceiver).send(amount);//2300 gas
+        (bool sent,) = donationsReceiver.call{value: msg.value}("");//2300 gas
         if(sent){
             emit Transfer(msg.sender, amount);
         }else {
@@ -53,7 +58,7 @@ contract Donation is Ownable {
     }
 
     receive() external payable {
-        emit Transfer(msg.sender, msg.value);
+        storeDonate();     
     }
 
 }

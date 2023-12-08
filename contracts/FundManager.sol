@@ -17,7 +17,7 @@ contract FundManager {
     address donationReceiver,
     string memory description
     ) external payable{
-        Donation donation = new Donation(donationReceiver,description);
+        Donation donation = new Donation{value: msg.value}(donationReceiver,description);
         ownersOfFunds[address(donation)] = msg.sender;
         numberOfFoundationsCreated += 1;
         emit Create(address(donation), msg.sender);
